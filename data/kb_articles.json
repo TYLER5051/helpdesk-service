@@ -1,0 +1,50 @@
+[
+  {
+    "id": "export-to-pdf",
+    "title": "Exporting records to PDF",
+    "content": "To export any board, list, or report to PDF, open the view you want and click the Export button in the top-right corner. Select PDF as the format, choose whether to include attachments, and press Download. The file is generated within a few seconds and saved to your browser's default download folder.",
+    "url": "https://docs.nimbusdesk.io/guides/export-to-pdf"
+  },
+  {
+    "id": "password-reset",
+    "title": "Resetting your password",
+    "content": "If you forgot your password, open the login page and click 'Forgot password?'. Enter the email address linked to your account and we will send you a secure reset link that expires in 60 minutes. Follow the link to create a new password of at least 12 characters. For security reasons, the reset link can be used only once.",
+    "url": "https://docs.nimbusdesk.io/guides/password-reset"
+  },
+  {
+    "id": "billing-and-invoices",
+    "title": "Billing, invoices and payments",
+    "content": "You can manage your subscription and payment method under Settings ▸ Billing. We accept all major credit cards and direct bank transfers (SEPA/ACH), and invoices for every charge are generated automatically. Download any past invoice or tax receipt from the same page. To update your card details, click 'Payment methods' and add a new card — the old one is removed instantly.",
+    "url": "https://docs.nimbusdesk.io/guides/billing-and-invoices"
+  },
+  {
+    "id": "tariff-plans",
+    "title": "Tariff plans and upgrading",
+    "content": "NimbusDesk offers three plans: Starter (free, up to 5 users), Pro, and Enterprise. You can upgrade or downgrade at any time under Settings ▸ Billing ▸ Plan. Upgrades take effect immediately and the new price is prorated for the rest of the billing period. Downgrades take effect at the next renewal date so you keep full access until then.",
+    "url": "https://docs.nimbusdesk.io/guides/tariff-plans"
+  },
+  {
+    "id": "integrations-overview",
+    "title": "Available integrations",
+    "content": "NimbusDesk integrates out of the box with Slack, Google Workspace, Microsoft Teams, GitHub, Zapier, and Salesforce. Connect any service under Settings ▸ Integrations by authorizing the app with OAuth. Once connected, events such as new tickets and status changes are synchronized in both directions in real time.",
+    "url": "https://docs.nimbusdesk.io/guides/integrations-overview"
+  },
+  {
+    "id": "invite-team-members",
+    "title": "Inviting team members and roles",
+    "content": "Invite teammates from Settings ▸ Team by entering their email addresses — they will receive an invitation that is valid for 7 days. Each member gets one of four roles: Owner, Admin, Agent, or Viewer. Admins can manage billing and integrations, while Agents can only handle tickets. You can change a member's role at any time from the same page.",
+    "url": "https://docs.nimbusdesk.io/guides/invite-team-members"
+  },
+  {
+    "id": "account-data-export",
+    "title": "Exporting or deleting your account data",
+    "content": "You can request a full export of your workspace data (tickets, contacts, attachments, and settings) under Settings ▸ Privacy ▸ Export. The archive is prepared in up to 48 hours and sent to your verified email as a .zip file. To delete your account permanently, use 'Delete workspace' on the same page after exporting anything you want to keep.",
+    "url": "https://docs.nimbusdesk.io/guides/account-data-export"
+  },
+  {
+    "id": "notification-settings",
+    "title": "Managing notification preferences",
+    "content": "Control which notifications you receive under Settings ▸ Notifications — separately for email, in-app, and mobile push channels. You can mute mentions, due-date reminders, and weekly digests, or set quiet hours from 22:00 to 08:00. Agents can additionally enable 'pause notifications' while on vacation; the service resumes automatically on the chosen date.",
+    "url": "https://docs.nimbusdesk.io/guides/notification-settings"
+  }
+]
