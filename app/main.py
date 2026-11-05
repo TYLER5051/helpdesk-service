@@ -1,11 +1,22 @@
 """FastAPI application entrypoint for the helpdesk service."""
 
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
 from app.database import init_db
+from app.routers.health import router as health_router
+from app.routers.webhooks import router as webhooks_router
+
+# Surface application-level logs (duplicate detection, background tasks) on
+# stderr alongside uvicorn's own output. The root logger defaults to WARNING
+# inside uvicorn, which would silently drop our INFO messages otherwise.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 
 @asynccontextmanager
@@ -22,9 +33,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(health_router)
+app.include_router(webhooks_router)
 
-@app.get("/health")
-async def health() -> dict[str, str]:
-    """Return service liveness status (must respond with 200 OK)."""
-    return {"status": "ok"}
+
 
