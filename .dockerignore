@@ -1,0 +1,25 @@
+# Version control
+.git/
+.gitignore
+.clinerules/
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment / secrets
+.env
+.env.example
+*.log
+
+# Not needed at runtime
+.dockerignore
+Dockerfile
+docker-compose.yml
+README.md

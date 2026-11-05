@@ -4,7 +4,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://helpdesk:helpdesk@db:5432/helpdesk
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/helpdesk_db}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
     depends_on:
       db:
@@ -13,15 +13,17 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: helpdesk
-      POSTGRES_USER: helpdesk
-      POSTGRES_PASSWORD: helpdesk
+      POSTGRES_DB: ${POSTGRES_DB:-helpdesk_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U helpdesk -d helpdesk"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-helpdesk_db}
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,3 +31,4 @@ services:
 
 volumes:
   postgres_data:
+

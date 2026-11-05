@@ -20,7 +20,7 @@ from app.services.rag import search_knowledge_base
 logger = logging.getLogger(__name__)
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "google/gemma-4-26b-a4b-it:free"
+OPENROUTER_MODEL = "openrouter/auto"
 DEFAULT_REQUEST_TIMEOUT = 60.0
 
 SYSTEM_PROMPT = (

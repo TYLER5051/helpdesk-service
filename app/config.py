@@ -15,7 +15,7 @@ from pydantic import BaseModel
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 DEFAULT_DATABASE_URL = (
-    "postgresql+asyncpg://helpdesk:helpdesk@localhost:5432/helpdesk"
+    "postgresql+asyncpg://postgres:postgres@localhost:5432/helpdesk_db"
 )
 
 
