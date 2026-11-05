@@ -8,6 +8,7 @@ from fastapi import FastAPI
 
 from app.database import init_db
 from app.routers.health import router as health_router
+from app.routers.operator import router as operator_router
 from app.routers.webhooks import router as webhooks_router
 
 # Surface application-level logs (duplicate detection, background tasks) on
@@ -35,6 +36,7 @@ app = FastAPI(
 
 app.include_router(health_router)
 app.include_router(webhooks_router)
+app.include_router(operator_router)
 
 
 

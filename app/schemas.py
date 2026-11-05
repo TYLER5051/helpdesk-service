@@ -35,6 +35,7 @@ class TicketResponse(BaseModel):
     message: str
     reply_url: str
     draft_reply: str | None = None
+    sent_at: datetime | None = None
     status: TicketStatus
     created_at: datetime
     updated_at: datetime

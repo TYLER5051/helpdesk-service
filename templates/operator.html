@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Helpdesk Operator</title>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --panel: #ffffff;
+      --border: #dfe3e8;
+      --text: #1f2733;
+      --muted: #6b7684;
+      --approve: #1a7f37;
+      --reject: #cf222e;
+      --pending: #847d6f;
+      --drafted: #0969da;
+      --sending: #d4780f;
+      --sent: #1a7f37;
+      --rejected: #cf222e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    header h1 { margin: 0; font-size: 20px; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 13px; }
+    .toolbar button {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+    }
+    .toolbar button:hover { background: #f0f2f5; }
+    .muted { color: var(--muted); }
+    main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--border);
+    }
+    th { background: #f0f2f5; font-weight: 600; white-space: nowrap; }
+    td.mono { font-family: "SF Mono", Consolas, monospace; font-size: 12px; }
+    .msg, .draft { max-width: 300px; white-space: pre-wrap; word-break: break-word; }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: #fff;
+    }
+    .badge.PENDING  { background: var(--pending); }
+    .badge.DRAFTED  { background: var(--drafted); }
+    .badge.SENDING  { background: var(--sending); }
+    .badge.SENT     { background: var(--sent); }
+    .badge.REJECTED { background: var(--rejected); }
+    button.action {
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    button.approve { background: var(--approve); margin-right: 6px; }
+    button.reject  { background: var(--reject); }
+    button.action:hover { filter: brightness(1.08); }
+    button.action:disabled { opacity: 0.5; cursor: wait; }
+    #empty { text-align: center; padding: 32px 0; font-size: 14px; }
+    #flash {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #24292f;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Helpdesk Operator</h1>
+    <div class="toolbar">
+      <button id="refresh-btn" type="button">Оновити список</button>
+      <label><input type="checkbox" id="auto-refresh" checked /> Авто-оновлення (8&nbsp;s)</label>
+      <span id="updated-at" class="muted"></span>
+    </div>
+  </header>
+
+  <main>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Email клієнта</th>
+          <th>Звернення</th>
+          <th>Чернетка (AI)</th>
+          <th>Статус</th>
+          <th>Створено</th>
+          <th>Дії</th>
+        </tr>
+      </thead>
+      <tbody id="ticket-rows"></tbody>
+    </table>
+    <p id="empty" class="muted" hidden>Тикетів поки немає.</p>
+  </main>
+
+  <div id="flash"></div>
+
+  <script>
+    "use strict";
+
+    const tbody = document.getElementById("ticket-rows");
+    const emptyEl = document.getElementById("empty");
+    const updatedAtEl = document.getElementById("updated-at");
+    const refreshBtn = document.getElementById("refresh-btn");
+    const autoRefreshEl = document.getElementById("auto-refresh");
+    const flashEl = document.getElementById("flash");
+
+    const AUTO_REFRESH_MS = 8000;
+    let loadTimer = null;
+
+    function flash(message) {
+      flashEl.textContent = message;
+      flashEl.style.display = "block";
+      clearTimeout(flash._timer);
+      flash._timer = setTimeout(() => { flashEl.style.display = "none"; }, 3500);
+    }
+
+    async function loadTickets() {
+      try {
+        const res = await fetch("/api/operator/tickets", { method: "GET" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const tickets = await res.json();
+        renderTickets(tickets);
+        updatedAtEl.textContent = "оновлено " + new Date().toLocaleTimeString();
+      } catch (err) {
+        flash("Не вдалося завантажити тикети: " + err.message);
+      }
+    }
+
+    function renderTickets(tickets) {
+      tbody.replaceChildren();
+      emptyEl.hidden = tickets.length > 0;
+      for (const t of tickets) {
+        const tr = document.createElement("tr");
+
+        const tdId = document.createElement("td");
+        tdId.className = "mono";
+        tdId.textContent = t.ticket_id;
+        tr.appendChild(tdId);
+
+        const tdEmail = document.createElement("td");
+        tdEmail.textContent = t.customer_email;
+        tr.appendChild(tdEmail);
+
+        const tdMsg = document.createElement("td");
+        tdMsg.className = "msg";
+        tdMsg.textContent = t.message;
+        tr.appendChild(tdMsg);
+
+        const tdDraft = document.createElement("td");
+        tdDraft.className = "draft";
+        tdDraft.textContent = t.draft_reply || "—";
+        tr.appendChild(tdDraft);
+
+        const tdStatus = document.createElement("td");
+        const badge = document.createElement("span");
+        badge.className = "badge " + (t.status || "");
+        badge.textContent = t.status || "—";
+        tdStatus.appendChild(badge);
+        if (t.sent_at) {
+          const sent = document.createElement("div");
+          sent.className = "muted";
+          sent.style.fontSize = "11px";
+          sent.textContent = "sent " + new Date(t.sent_at).toLocaleString();
+          tdStatus.appendChild(sent);
+        }
+        tr.appendChild(tdStatus);
+
+        const tdCreated = document.createElement("td");
+        tdCreated.className = "muted";
+        tdCreated.textContent = t.created_at ? new Date(t.created_at).toLocaleString() : "";
+        tr.appendChild(tdCreated);
+
+        const tdActions = document.createElement("td");
+        if (t.status === "DRAFTED") {
+          const approveBtn = document.createElement("button");
+          approveBtn.className = "action approve";
+          approveBtn.textContent = "Підтвердити";
+          approveBtn.addEventListener("click", () => moderate(t.ticket_id, "approve", approveBtn));
+
+          const rejectBtn = document.createElement("button");
+          rejectBtn.className = "action reject";
+          rejectBtn.textContent = "Відхилити";
+          rejectBtn.addEventListener("click", () => moderate(t.ticket_id, "reject", rejectBtn));
+
+          tdActions.append(approveBtn, rejectBtn);
+        } else {
+          tdActions.textContent = "—";
+        }
+        tr.appendChild(tdActions);
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function moderate(ticketId, action, button) {
+      button.disabled = true;
+      try {
+        const res = await fetch(
+          "/api/operator/tickets/" + encodeURIComponent(ticketId) + "/" + action,
+          { method: "POST" }
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          flash("Помилка (" + action + "): HTTP " + res.status);
+          return;
+        }
+        if (action === "approve" && data.status !== "sent") {
+          flash("Тикет не надіслано — можливо, відповідь уже відправлена або недоступна чернетка.");
+        } else if (action === "approve") {
+          flash("Відповідь тикету " + ticketId + " доставлено в хелпдеск.");
+        } else if (data.status === "rejected") {
+          flash("Тикет " + ticketId + " відхилено.");
+        }
+      } catch (err) {
+        flash("Помилка (" + action + "): " + err.message);
+      } finally {
+        button.disabled = false;
+        loadTickets();
+      }
+    }
+
+    function armAutoRefresh() {
+      clearInterval(loadTimer);
+      if (autoRefreshEl.checked) {
+        loadTimer = setInterval(loadTickets, AUTO_REFRESH_MS);
+      }
+    }
+
+    refreshBtn.addEventListener("click", () => { loadTickets(); flash("Список оновлено."); });
+    autoRefreshEl.addEventListener("change", armAutoRefresh);
+
+    loadTickets();
+    armAutoRefresh();
+  </script>
+</body>
+</html>

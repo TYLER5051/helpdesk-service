@@ -51,6 +51,9 @@ class Ticket(Base):
     message: Mapped[str] = mapped_column(Text, nullable=False)
     reply_url: Mapped[str] = mapped_column(String, nullable=False)
     draft_reply: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     status: Mapped[TicketStatus] = mapped_column(
         SAEnum(TicketStatus, name="ticket_status"),
         default=TicketStatus.PENDING,
