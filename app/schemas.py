@@ -10,18 +10,18 @@ from app.models import TicketStatus
 class WebhookPayload(BaseModel):
     """Inbound webhook body describing a new helpdesk ticket."""
 
-    event_id: str = Field(min_length=1)
-    ticket_id: str = Field(min_length=1)
-    customer_email: str = Field(min_length=1)
-    message: str = Field(min_length=1)
-    reply_url: str = Field(min_length=1)
+    event_id: str = Field(min_length=1, max_length=200)
+    ticket_id: str = Field(min_length=1, max_length=200)
+    customer_email: str = Field(min_length=1, max_length=320)
+    message: str = Field(min_length=1, max_length=10_000)
+    reply_url: str = Field(min_length=1, max_length=2048)
 
 
 class HelpdeskReplyPayload(BaseModel):
     """Outbound reply delivered back to the helpdesk provider."""
 
-    ticket_id: str = Field(min_length=1)
-    message: str = Field(min_length=1)
+    ticket_id: str = Field(min_length=1, max_length=200)
+    message: str = Field(min_length=1, max_length=10_000)
 
 
 class TicketResponse(BaseModel):

@@ -25,7 +25,7 @@ async def receive_helpdesk_webhook(
 ) -> dict[str, str]:
     """Accept a helpdesk webhook event exactly once.
 
-    Responds immediately (SLA < 2s) and defers the LLM drafting work to a
+    Responds immediately (SLA < 200 ms) and defers the LLM drafting work to a
     background task. Events carrying an already-seen ``event_id`` are logged
     and silently ignored so retries by the provider do not create duplicates.
     """
