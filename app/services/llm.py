@@ -71,6 +71,10 @@ class BaseLLMProvider(ABC):
         """Return a draft support reply for the message grounded in ``articles``."""
 
 
+class LLMProviderError(Exception):
+    """Raised when an LLM provider cannot produce a reply."""
+
+
 class OpenRouterLLMProvider(BaseLLMProvider):
     """LLM provider backed by the OpenRouter chat completions API."""
 
@@ -97,17 +101,43 @@ class OpenRouterLLMProvider(BaseLLMProvider):
             "temperature": 0.6,
         }
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            response = await client.post(
-                OPENROUTER_BASE_URL, headers=headers, json=payload
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(
+                    OPENROUTER_BASE_URL, headers=headers, json=payload
+                )
+        except httpx.TimeoutException as exc:
+            raise LLMProviderError(
+                f"OpenRouter request timed out after {self.timeout}s"
+            ) from exc
+        except httpx.RequestError as exc:
+            raise LLMProviderError(f"OpenRouter request failed: {exc}") from exc
+
+        if response.status_code == 429:
+            raise LLMProviderError(
+                f"OpenRouter rate limit exceeded (HTTP 429): {response.text[:300]}"
             )
+
+        try:
             response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise LLMProviderError(
+                f"OpenRouter returned HTTP {response.status_code}: {response.text[:300]}"
+            ) from exc
+
+        try:
             data = response.json()
+        except ValueError as exc:
+            raise LLMProviderError(
+                "OpenRouter returned a non-JSON response"
+            ) from exc
 
         try:
             content = data["choices"][0]["message"]["content"].strip()
         except (KeyError, IndexError, TypeError):
-            raise ValueError(f"Unexpected OpenRouter response: {data!r}") from None
+            raise LLMProviderError(
+                f"Unexpected OpenRouter response shape: {data!r}"
+            ) from None
         return content
 
 

@@ -4,10 +4,16 @@ Implements a simple lexical search over ``data/kb_articles.json``: the query
 and each article are split into word tokens and ranked by overlap (with a
 weight bonus for title matches). When nothing matches, the first articles are
 returned so the LLM still has context material.
+
+The seed articles are parsed and tokenized once and cached in memory
+(``functools.lru_cache``): RAG retrieval runs on hot async code paths
+(webhook background tasks, operator UI), so repeated synchronous disk I/O is
+avoided. Restart the process after editing ``kb_articles.json``.
 """
 
 import json
 import re
+from functools import lru_cache
 from typing import Any
 
 from app.config import PROJECT_ROOT
@@ -17,16 +23,23 @@ FALLBACK_CONTEXT_LIMIT = 2
 
 _TOKEN_PATTERN = re.compile(r"[a-zа-яіїєґ0-9']+")
 
+IndexedArticle = tuple[dict[str, Any], set[str], set[str]]
+
 
 def _tokenize(text: str) -> set[str]:
     """Lowercase the text and split it into word tokens (EN/UK)."""
     return set(_TOKEN_PATTERN.findall(text.lower()))
 
 
-def _load_articles() -> list[dict[str, Any]]:
-    """Load and return the knowledge base articles from disk."""
+@lru_cache(maxsize=1)
+def _load_index() -> tuple[IndexedArticle, ...]:
+    """Load and index articles once; the result is cached process-wide."""
     with KB_ARTICLES_PATH.open(encoding="utf-8") as file:
-        return json.load(file)
+        articles = json.load(file)
+    return tuple(
+        (article, _tokenize(article["title"]), _tokenize(article["content"]))
+        for article in articles
+    )
 
 
 def search_knowledge_base(query: str, limit: int = 3) -> list[dict[str, Any]]:
@@ -40,15 +53,15 @@ def search_knowledge_base(query: str, limit: int = 3) -> list[dict[str, Any]]:
     if limit < 1:
         return []
 
-    articles = _load_articles()
+    indexed = _load_index()
     query_tokens = _tokenize(query)
-    if not query_tokens:
-        return articles[: min(limit, FALLBACK_CONTEXT_LIMIT)]
+
+    if not indexed or not query_tokens:
+        fallback_count = min(limit, FALLBACK_CONTEXT_LIMIT)
+        return [article for article, _title, _body in indexed[:fallback_count]]
 
     ranked: list[tuple[int, dict[str, Any]]] = []
-    for article in articles:
-        title_tokens = _tokenize(article["title"])
-        body_tokens = _tokenize(article["content"])
+    for article, title_tokens, body_tokens in indexed:
         score = len(query_tokens & body_tokens) + 3 * len(query_tokens & title_tokens)
         if score > 0:
             ranked.append((score, article))
@@ -59,4 +72,5 @@ def search_knowledge_base(query: str, limit: int = 3) -> list[dict[str, Any]]:
         return [article for _, article in ranked[:limit]]
 
     context_count = min(limit, FALLBACK_CONTEXT_LIMIT)
-    return articles[:context_count]
+    return [article for article, _title, _body in indexed[:context_count]]
+
